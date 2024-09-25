@@ -42,7 +42,8 @@ const SHAPES = {
     ]
 };
 
-const UNICODE_CHARS = ['□', '■', '▢', '▣', '▤', '▥', '▦', '▧', '▨', '▩'];
+const PIECE_COLORS = ['#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d', '#343a40'];
+
 
 function initGame() {
     resizeCanvas();
@@ -69,29 +70,24 @@ function spawnPiece() {
     const shapeKeys = Object.keys(SHAPES);
     const randomShape = SHAPES[shapeKeys[Math.floor(Math.random() * shapeKeys.length)]];
     const centerX = Math.floor(GRID_WIDTH / 2) - Math.floor(randomShape[0].length / 2);
-    const centerY = Math.floor(GRID_HEIGHT / 2) - Math.floor(randomShape.length / 2);
     currentPiece = {
         shape: randomShape,
         x: centerX,
-        y: centerY,
-        direction: null
+        y: 0,
+        color: PIECE_COLORS[Math.floor(Math.random() * PIECE_COLORS.length)]
     };
 }
 
 function gameLoop() {
-    if (currentPiece.direction) {
-        movePiece();
-    }
+    movePiece();
     clearLines();
     draw();
 }
 
 function movePiece() {
-    const newX = currentPiece.x + (currentPiece.direction === 'right' ? 1 : (currentPiece.direction === 'left' ? -1 : 0));
-    const newY = currentPiece.y + (currentPiece.direction === 'down' ? 1 : (currentPiece.direction === 'up' ? -1 : 0));
+    const newY = currentPiece.y + 1;
 
-    if (isValidMove(newX, newY)) {
-        currentPiece.x = newX;
+    if (isValidMove(currentPiece.x, newY)) {
         currentPiece.y = newY;
     } else {
         placePiece();
@@ -135,7 +131,8 @@ function clearLines() {
     // Check horizontal lines
     for (let row = 0; row < GRID_HEIGHT; row++) {
         if (grid[row].every(cell => cell === 1)) {
-            grid[row].fill(0);
+            grid.splice(row, 1);
+            grid.unshift(Array(GRID_WIDTH).fill(0));
             linesCleared++;
         }
     }
@@ -151,6 +148,7 @@ function clearLines() {
         }
     }
 
+
     // Update score
     if (linesCleared > 0) {
         const multiplier = isMultiDirection ? 8 : (linesCleared >= 3 ? 4 : (linesCleared === 2 ? 2 : 1));
@@ -162,17 +160,31 @@ function clearLines() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
+    // Draw grid lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.setLineDash([2, 2]);
+    for (let x = 0; x <= GRID_WIDTH; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * CELL_SIZE, 0);
+        ctx.lineTo(x * CELL_SIZE, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= GRID_HEIGHT; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * CELL_SIZE);
+        ctx.lineTo(canvas.width, y * CELL_SIZE);
+        ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+
+    // Draw placed pieces
     for (let row = 0; row < GRID_HEIGHT; row++) {
         for (let col = 0; col < GRID_WIDTH; col++) {
-            const char = UNICODE_CHARS[grid[row][col]];
-            ctx.fillStyle = grid[row][col] ? '#333' : '#eee';
-            ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-            ctx.fillStyle = grid[row][col] ? '#fff' : '#333';
-            ctx.font = `${CELL_SIZE * 0.8}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(char, col * CELL_SIZE + CELL_SIZE / 2, row * CELL_SIZE + CELL_SIZE / 2);
+            if (grid[row][col]) {
+                ctx.fillStyle = '#333'; // Or any color you want for placed pieces
+                ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            }
         }
     }
 
@@ -183,46 +195,43 @@ function draw() {
                 if (currentPiece.shape[row][col]) {
                     const x = (currentPiece.x + col) * CELL_SIZE;
                     const y = (currentPiece.y + row) * CELL_SIZE;
-                    ctx.fillStyle = '#007bff';
+                    ctx.fillStyle = currentPiece.color;
                     ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = `${CELL_SIZE * 0.8}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('■', x + CELL_SIZE / 2, y + CELL_SIZE / 2);
                 }
             }
         }
     }
 
-    // Draw core
-    const coreX = Math.floor(GRID_WIDTH / 2) * CELL_SIZE;
-    const coreY = Math.floor(GRID_HEIGHT / 2) * CELL_SIZE;
-    ctx.fillStyle = '#ff0000';
-    ctx.beginPath();
-    ctx.arc(coreX, coreY, CELL_SIZE / 4, 0, 2 * Math.PI);
-    ctx.fill();
+        // Draw core
+        const coreX = Math.floor(GRID_WIDTH / 2) * CELL_SIZE;
+        const coreY = Math.floor(GRID_HEIGHT / 2) * CELL_SIZE;
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(coreX, coreY, CELL_SIZE / 4, 0, 2 * Math.PI);
+        ctx.fill();
 }
 
 function handleKeyPress(event) {
     switch (event.key) {
         case 'ArrowLeft':
-            currentPiece.direction = 'left';
+            if (isValidMove(currentPiece.x - 1, currentPiece.y)) {
+                currentPiece.x--;
+            }
             break;
         case 'ArrowRight':
-            currentPiece.direction = 'right';
-            break;
-        case 'ArrowUp':
-            currentPiece.direction = 'up';
+            if (isValidMove(currentPiece.x + 1, currentPiece.y)) {
+                currentPiece.x++;
+            }
             break;
         case 'ArrowDown':
-            currentPiece.direction = 'down';
+            movePiece();
             break;
         case ' ':
             rotatePiece();
             break;
     }
 }
+
 
 function rotatePiece() {
     const rotated = [];
@@ -233,11 +242,12 @@ function rotatePiece() {
         }
         rotated.push(row);
     }
-    
+
     if (isValidMove(currentPiece.x, currentPiece.y, rotated)) {
         currentPiece.shape = rotated;
     }
 }
+
 
 window.addEventListener('resize', () => {
     resizeCanvas();
