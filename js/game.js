@@ -104,6 +104,9 @@ function movePiece(direction) {
         case 'right':
             newX++;
             break;
+        case 'up':  // Added 'up' case
+            newY--;
+            break;
         case 'down':
             newY++;
             break;
@@ -245,6 +248,10 @@ function handleKeyPress(event) {
         case 'ArrowRight':
             lastMove = 'right';
             movePiece('right'); // Move immediately on key press
+            break;
+        case 'ArrowUp': // Added ArrowUp case
+            lastMove = 'up';
+            movePiece('up'); // Move immediately on key press
             break;
         case 'ArrowDown':
             lastMove = 'down';
