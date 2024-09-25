@@ -115,10 +115,10 @@ function movePiece(direction) {
     if (isValidMove(newX, newY)) {
         currentPiece.x = newX;
         currentPiece.y = newY;
-    } else if (direction === 'down') {
+    } else {
         placePiece();
-        spawnPiece();
-        lastMove = null; // Reset last move after placing
+        spawnPiece(); // Spawn new piece immediately after placing
+        lastMove = null;
     }
 }
 
