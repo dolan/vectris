@@ -244,5 +244,3 @@ window.addEventListener('resize', () => {
     initGrid();
     draw();
 });
-
-initGame();
