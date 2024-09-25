@@ -10,6 +10,8 @@ let score = 0;
 let currentPiece = null;
 let gameInterval = null;
 let gameSpeed = 500; // milliseconds
+let lastMove = null; // Stores the last move direction
+
 
 const SHAPES = {
     PLUS: [
@@ -70,30 +72,53 @@ function spawnPiece() {
     const shapeKeys = Object.keys(SHAPES);
     const randomShape = SHAPES[shapeKeys[Math.floor(Math.random() * shapeKeys.length)]];
     const centerX = Math.floor(GRID_WIDTH / 2) - Math.floor(randomShape[0].length / 2);
+    const centerY = Math.floor(GRID_HEIGHT / 2) - Math.floor(randomShape.length / 2); // Center Y
+
     currentPiece = {
         shape: randomShape,
         x: centerX,
-        y: 0,
+        y: centerY, // Start from center
         color: PIECE_COLORS[Math.floor(Math.random() * PIECE_COLORS.length)]
     };
 }
 
 function gameLoop() {
-    movePiece();
+
+    if (lastMove) {
+        movePiece(lastMove);
+    }
+
+
     clearLines();
     draw();
 }
 
-function movePiece() {
-    const newY = currentPiece.y + 1;
+function movePiece(direction) {
+    let newX = currentPiece.x;
+    let newY = currentPiece.y;
 
-    if (isValidMove(currentPiece.x, newY)) {
+    switch (direction) {
+        case 'left':
+            newX--;
+            break;
+        case 'right':
+            newX++;
+            break;
+        case 'down':
+            newY++;
+            break;
+    }
+
+    if (isValidMove(newX, newY)) {
+        currentPiece.x = newX;
         currentPiece.y = newY;
-    } else {
+    } else if (direction === 'down') {
         placePiece();
         spawnPiece();
+        lastMove = null; // Reset last move after placing
     }
 }
+
 
 function isValidMove(x, y, shape = currentPiece.shape) {
     for (let row = 0; row < shape.length; row++) {
@@ -214,17 +239,16 @@ function draw() {
 function handleKeyPress(event) {
     switch (event.key) {
         case 'ArrowLeft':
-            if (isValidMove(currentPiece.x - 1, currentPiece.y)) {
-                currentPiece.x--;
-            }
+            lastMove = 'left';
+            movePiece('left'); // Move immediately on key press
             break;
         case 'ArrowRight':
-            if (isValidMove(currentPiece.x + 1, currentPiece.y)) {
-                currentPiece.x++;
-            }
+            lastMove = 'right';
+            movePiece('right'); // Move immediately on key press
             break;
         case 'ArrowDown':
-            movePiece();
+            lastMove = 'down';
+            movePiece('down'); // Move immediately on key press
             break;
         case ' ':
             rotatePiece();
